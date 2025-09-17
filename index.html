@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Assignment Manager</title>
+  <style>
+    body { font-family: Arial; max-width: 600px; margin: auto; padding: 20px; }
+    input, button { padding: 10px; margin: 5px 0; width: 100%; }
+    .assignment { border: 1px solid #ddd; padding: 15px; margin-bottom: 10px; }
+    .edit-form { display: none; margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <h1>Assignment Manager</h1>
+
+  <input type="text" id="title" placeholder="Title" required />
+  <input type="text" id="description" placeholder="Description" />
+  <input type="date" id="dueDate"/>
+  <button onclick="createAssignment()">Create Assignment</button>
+
+  <h2>Get Assignment By ID</h2>
+  <input type="text" id="get-id" placeholder="Enter Assignment ID" />
+  <button onclick="getAssignmentById()">Get Assignment</button>
+  <div id="assignment-details"></div>
+
+  <h2>All Assignments</h2>
+  <div id="assignments"></div>
+
+  <script>
+    const API_URL = 'http://localhost:5000/api/assignments';
+
+    async function fetchAssignments() {
+      const res = await fetch(API_URL);
+      const assignments = await res.json();
+      const container = document.getElementById('assignments');
+      container.innerHTML = '';
+
+      assignments.forEach(a => {
+        const div = document.createElement('div');
+        div.className = 'assignment';
+        div.innerHTML = `
+          <h3>${a.title}</h3>
+          <p>${a.description || 'No Description'}</p>
+          <p>Due: ${a.dueDate ? new Date(a.dueDate).toLocaleDateString() : 'N/A'}</p>
+          <button onclick="deleteAssignment('${a._id}')">Delete</button>
+          <button onclick="showEditForm('${a._id}', '${a.title}', '${a.description}', '${a.dueDate ? new Date(a.dueDate).toISOString().split('T')[0] : ''}')">Edit</button>
+
+          <div class="edit-form" id="edit-form-${a._id}">
+            <input type="text" id="edit-title-${a._id}" value="${a.title}" />
+            <input type="text" id="edit-description-${a._id}" value="${a.description || ''}" />
+            <input type="date" id="edit-dueDate-${a._id}" value="${a.dueDate ? new Date(a.dueDate).toISOString().split('T')[0] : ''}" />
+            <button onclick="updateAssignment('${a._id}')">Save</button>
+          </div>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function showEditForm(id, title, description, dueDate) {
+      const form = document.getElementById(`edit-form-${id}`);
+      form.style.display = form.style.display === 'none' || form.style.display === '' ? 'block' : 'none';
+    }
+
+    async function createAssignment() {
+      const title = document.getElementById('title').value;
+      const description = document.getElementById('description').value;
+      const dueDate = document.getElementById('dueDate').value;
+
+      await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, description, dueDate })
+      });
+
+      fetchAssignments();
+    }
+
+    async function updateAssignment(id) {
+      const title = document.getElementById(`edit-title-${id}`).value;
+      const description = document.getElementById(`edit-description-${id}`).value;
+      const dueDate = document.getElementById(`edit-dueDate-${id}`).value;
+
+      await fetch(`${API_URL}/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, description, dueDate })
+      });
+
+      fetchAssignments();
+    }
+
+    async function deleteAssignment(id) {
+      await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
+      fetchAssignments();
+    }
+
+    async function getAssignmentById() {
+      const id = document.getElementById('get-id').value;
+
+      const res = await fetch(`${API_URL}/${id}`);
+      
+      if (res.ok) {
+        const assignment = await res.json();
+        document.getElementById('assignment-details').innerHTML = `
+          <h3>${assignment.title}</h3>
+          <p>${assignment.description || 'No Description'}</p>
+          <p>Due: ${assignment.dueDate ? new Date(assignment.dueDate).toLocaleDateString() : 'N/A'}</p>
+          <p>Points: ${assignment.points}</p>
+          <p>Completed: ${assignment.completed}</p>
+        `;
+      } else {
+        document.getElementById('assignment-details').innerHTML = '<p style="color: red;">Assignment not found</p>';
+      }
+    }
+
+    window.onload = fetchAssignments;
+  </script>
+</body>
+</html>
