@@ -1,0 +1,15 @@
+{
+  "name": "bcrc-api",
+  "version": "1.0.0",
+  "description": "REST API for Brain Cell Research Centre (BCRC)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.2",
+    "express": "^5.1.0",
+    "mongoose": "^8.18.1"
+  }
+}
